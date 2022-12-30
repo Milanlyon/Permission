@@ -12,7 +12,9 @@ import androidx.databinding.DataBindingUtil;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -23,6 +25,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.webkit.JavascriptInterface;
@@ -42,13 +45,15 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int MY_PHOTO_TAGGING_PERMISSIONS = 1;
+    private static final int PERMISSIONS_CODE = 101;
     ActivityMainBinding binding;
-    String[] permissions;
-    String[] deniedPermissionsAmongPhotoTagging;
+    String[] permissions1;
+    String[] getPermissionsAmongPermission;
     private static final int CAMERA_REQUEST = 1888;
     Bitmap photo;
     Uri tempUri;
+    int permissionsCount;
+    String permissionString;
 
 
     @Override
@@ -56,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
+        permissions1 = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
 
         WebSettings webSettings = binding.webView.getSettings();
 
@@ -64,37 +69,12 @@ public class MainActivity extends AppCompatActivity {
         binding.btClickHere.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               //  openCamera();
-               binding.webView.loadUrl("file:///android_asset/hello.html");
+                binding.webView.loadUrl("file:///android_asset/hello.html");
 
             }
         });
         binding.webView.addJavascriptInterface(new WebViewJavaScriptInterface(this), "app");
 
-
-
-
-
-/*
-        binding.btClickHere.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(MainActivity.this, "Permission Granted", Toast.LENGTH_SHORT).show();
-                } else {
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                        Snackbar.make(findViewById(android.R.id.content), "need a permisssion", Snackbar.LENGTH_INDEFINITE).setAction("Enable", new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 101);
-                            }
-                        }).show();
-                    } else {
-                        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 101);
-                    }
-                }
-            }
-        });*/
     }
 
     void openCamera() {
@@ -103,69 +83,42 @@ public class MainActivity extends AppCompatActivity {
             Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
             startActivityForResult(cameraIntent, CAMERA_REQUEST);
         } else {
-            requestRunTimePermissions(MainActivity.this, permissions, MY_PHOTO_TAGGING_PERMISSIONS);
+            requestRunTimePermissions();
         }
 
     }
 
 
-    protected void requestRunTimePermissions(final Activity activity, final String[] permissions, final int customPermissionConstant) {
-        if (permissions.length > 1 && customPermissionConstant == MY_PHOTO_TAGGING_PERMISSIONS) {
+    private void requestRunTimePermissions() {
 
-            if (getDeniedPermissionsAmongPhototaggingPermissions().length == 1) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, deniedPermissionsAmongPhotoTagging[0])) {
-                    Snackbar.make(findViewById(android.R.id.content), "App needs permission to work", Snackbar.LENGTH_INDEFINITE).setAction("ENABLE",
-                            new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    ActivityCompat.requestPermissions(activity, deniedPermissionsAmongPhotoTagging, customPermissionConstant);
-                                }
-                            }).show();
-                } else {
-                    ActivityCompat.requestPermissions(activity, deniedPermissionsAmongPhotoTagging, customPermissionConstant);
-                }
-            } else if (getDeniedPermissionsAmongPhototaggingPermissions().length > 1) {
-                if (isFirstTimeAskForPhotoTaggingPermission()) {
-                    ActivityCompat.requestPermissions(activity, deniedPermissionsAmongPhotoTagging, customPermissionConstant);
-                }
+        if (getPermissionsAmongPermission().length > 0) {
+            if (permissionsCount < 2) {
+                ActivityCompat.requestPermissions(MainActivity.this, getPermissionsAmongPermission, 101);
             } else {
-                Snackbar.make(findViewById(android.R.id.content), "This functionality needs multiple app permissions", Snackbar.LENGTH_INDEFINITE).setAction("ENABLE",
-                        new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                ActivityCompat.requestPermissions(activity, deniedPermissionsAmongPhotoTagging, customPermissionConstant);
-                            }
-                        }).show();
+                showAppDialog();
+                Log.d("pk", "call from requestRunTimePermissions");
             }
         }
+
+
     }
 
-    protected boolean isFirstTimeAskForPhotoTaggingPermission() {
-        SharedPreferences sharedPreferences = getSharedPreferences("permissionasks", MODE_PRIVATE);
-        boolean isFirstTime = sharedPreferences.getBoolean("PHOTO_FIRST_PERMISSION", true);
-        if (isFirstTime) {
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean("PHOTO_FIRST_PERMISSION", false);
-            editor.commit();
-        }
-        return isFirstTime;
-    }
 
-    protected String[] getDeniedPermissionsAmongPhototaggingPermissions() {
+    private String[] getPermissionsAmongPermission() {
 
-        final List<String> deniedPermissions = new ArrayList<String>();
-        for (String permission : permissions) {
+        final List<String> getPermissions = new ArrayList<>();
+        for (String permission : permissions1) {
             if (ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
-                deniedPermissions.add(permission);
+                getPermissions.add(permission);
             }
         }
-
-        this.deniedPermissionsAmongPhotoTagging = deniedPermissions.toArray(new String[deniedPermissions.size()]);
-        return deniedPermissionsAmongPhotoTagging;
+        permissionsCount++;
+        this.getPermissionsAmongPermission = getPermissions.toArray(new String[getPermissions.size()]);
+        return getPermissionsAmongPermission;
     }
 
     protected boolean checkWhetherAllPermissionsPresentForPhotoTagging() {
-        for (String permission : permissions) {
+        for (String permission : permissions1) {
             if (ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
                 return false;
             }
@@ -176,23 +129,74 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == MY_PHOTO_TAGGING_PERMISSIONS) {
+        if (requestCode == PERMISSIONS_CODE) {
             if (checkWhetherAllPermissionsPresentForPhotoTagging()) {
                 Toast.makeText(this, "camera permission granted", Toast.LENGTH_LONG).show();
                 Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
                 startActivityForResult(cameraIntent, CAMERA_REQUEST);
+            } else if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, getPermissionsAmongPermission[0])) {
+                showAppDialog();
+                Log.d("pk", "from onRequestPermissionsResult ");
             } else {
-                String permissionString = getDeniedPermissionsAmongPhototaggingPermissions().length == 1 ? "Permission" : "Permissions";
-                Snackbar.make(findViewById(android.R.id.content), permissionString + " denied, photo tagging will not work. To enable now click here",
-                        Snackbar.LENGTH_INDEFINITE).setAction("ENABLE", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        ActivityCompat.requestPermissions(MainActivity.this, getDeniedPermissionsAmongPhototaggingPermissions(), MY_PHOTO_TAGGING_PERMISSIONS);
-                    }
-                }).show();
+                Log.d("pk", "from onRequestPermissionsResult  2");
+
+                showAppDialog();
+
             }
+
+
         }
     }
+
+
+    private void showAppDialog() {
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, getPermissionsAmongPermission[0])) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("alert").setMessage("app needs permissions");
+            builder.setCancelable(false);
+            builder.setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, getPermissionsAmongPermission[0])) {
+                        ActivityCompat.requestPermissions(MainActivity.this, getPermissionsAmongPermission, 101);
+                    }
+
+                }
+            });
+            builder.setNegativeButton("No,Exit", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+            builder.create().show();
+        } else {
+            permissionString = getPermissionsAmongPermission().length == 1 ? "Permission" : "Permissions";
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("alert").setMessage("please provide " + permissionString + ",go to setting and give required permission");
+            builder.setCancelable(false);
+            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent intent = new Intent();
+                    intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", getPackageName(), null);
+                    intent.setData(uri);
+                    startActivity(intent);
+                }
+            });
+            builder.setNegativeButton("No,Exit", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    finish();
+                }
+            });
+            builder.create().show();
+        }
+
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -200,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
             photo = (Bitmap) data.getExtras().get("data");
             tempUri = getImageUri(getApplicationContext(), photo);
-            binding.tvGetPath.setText(tempUri.getPath());
+            Log.d("pk", tempUri.getPath());
         }
     }
 
@@ -211,54 +215,25 @@ public class MainActivity extends AppCompatActivity {
         return Uri.parse(path);
     }
 
-    Uri file() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            if (Build.VERSION.SDK_INT >= 23) {
-
-                File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/images.jpg");
-                if (dir.exists()) {
-                    Log.d("path", dir.toString());
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-                    return Uri.fromFile(dir);
-                }
-
-            } else {
-                File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/images.jpeg");
-                if (dir.exists()) {
-                    Log.d("path", dir.toString());
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-
-
-                }
-            }
-        }
-        return null;
-    }
 
     public class WebViewJavaScriptInterface {
 
         private Context context;
 
-        /*
-         * Need a reference to the context in order to sent a post message
-         */
         public WebViewJavaScriptInterface(Context context) {
             this.context = context;
         }
 
-        /*
-         * This method can be called from Android. @JavascriptInterface
-         * required after SDK version 17.
-         */
         @JavascriptInterface
-        public String uri(String message) {
+        public String uri() {
             openCamera();
+            Log.d("pk1", tempUri.getPath());
+
             return tempUri.getPath();
         }
     }
+
+
 }
 
 

@@ -12,13 +12,19 @@
 
 <h2 id="tag"></h2>
 
-<button onclick="show('hii there')">show</button>
+<button onclick="openCamera()">openCamera</button>
+<button onclick="showValue()">showValue</button>
 <script>
+var txt
+    function openCamera(){
+    txt =app.uri();
 
-    function show(toast){
-
-     return  document.getElementById("tag").innerHTML= app.uri(toast);
  }
+  function showValue(){
+        document.getElementById("tag").innerHTML = txt;
+
+ }
+
 </script>
 
 
