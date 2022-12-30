@@ -46,14 +46,14 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSIONS_CODE = 101;
-    ActivityMainBinding binding;
-    String[] permissions1;
-    String[] getPermissionsAmongPermission;
+    private ActivityMainBinding binding;
+    private String[] permissions1;
+    private String[] getPermissionsAmongPermission;
     private static final int CAMERA_REQUEST = 1888;
-    Bitmap photo;
-    Uri tempUri;
-    int permissionsCount;
-    String permissionString;
+    private Bitmap photo;
+    private Uri tempUri;
+    private int permissionsCount;
+    private String permissionString;
 
 
     @Override
@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
         return getPermissionsAmongPermission;
     }
 
-    protected boolean checkWhetherAllPermissionsPresentForPhotoTagging() {
+    private boolean checkWhetherAllPermissionsPresentForPhotoTagging() {
         for (String permission : permissions1) {
             if (ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
                 return false;
@@ -147,7 +147,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
 
     private void showAppDialog() {
 
@@ -204,11 +203,14 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
             photo = (Bitmap) data.getExtras().get("data");
             tempUri = getImageUri(getApplicationContext(), photo);
+            String uriString = tempUri.toString();
+            binding.webView.evaluateJavascript("javascript:updateURI(uriString);", null);
+
             Log.d("pk", tempUri.getPath());
         }
     }
 
-    public Uri getImageUri(Context inContext, Bitmap inImage) {
+    private Uri getImageUri(Context inContext, Bitmap inImage) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
         String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "Title", null);
@@ -225,11 +227,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public String uri() {
+        public void uri() {
             openCamera();
-            Log.d("pk1", tempUri.getPath());
-
-            return tempUri.getPath();
+//            Log.d("pk1", tempUri.getPath());
+//
+//            return tempUri.getPath();
         }
     }
 

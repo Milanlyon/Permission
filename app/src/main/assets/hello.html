@@ -13,17 +13,18 @@
 <h2 id="tag"></h2>
 
 <button onclick="openCamera()">openCamera</button>
-<button onclick="showValue()">showValue</button>
 <script>
-var txt
+
     function openCamera(){
-    txt =app.uri();
+          document.getElementById("tag").innerHTML = app.uri();
 
  }
-  function showValue(){
-        document.getElementById("tag").innerHTML = txt;
 
+ function updateURI(uri){
+
+    document.getElementById("tag").innerHTML = uri;
  }
+
 
 </script>
 
