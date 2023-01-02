@@ -27,6 +27,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -47,7 +48,7 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSIONS_CODE = 101;
     private ActivityMainBinding binding;
-    private String[] permissions1;
+    private String[] permissions;
     private String[] getPermissionsAmongPermission;
     private static final int CAMERA_REQUEST = 1888;
     private Bitmap photo;
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        permissions1 = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
+        permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
 
         WebSettings webSettings = binding.webView.getSettings();
 
@@ -69,24 +70,26 @@ public class MainActivity extends AppCompatActivity {
         binding.btClickHere.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                binding.webView.loadUrl("file:///android_asset/hello.html");
+                binding.webView.loadUrl("file:///android_asset/appzillon.html");
 
             }
         });
-        binding.webView.addJavascriptInterface(new WebViewJavaScriptInterface(this), "app");
+        binding.webView.addJavascriptInterface(new WebViewJavaScriptInterface(this), "Android");
 
     }
 
     void openCamera() {
         if (checkWhetherAllPermissionsPresentForPhotoTagging()) {
-            Toast.makeText(MainActivity.this, "camera permission granted", Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "camera permission granted", Toast.LENGTH_SHORT).show();
             Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
             startActivityForResult(cameraIntent, CAMERA_REQUEST);
+
         } else {
             requestRunTimePermissions();
         }
 
     }
+
 
 
     private void requestRunTimePermissions() {
@@ -107,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     private String[] getPermissionsAmongPermission() {
 
         final List<String> getPermissions = new ArrayList<>();
-        for (String permission : permissions1) {
+        for (String permission : permissions) {
             if (ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
                 getPermissions.add(permission);
             }
@@ -118,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean checkWhetherAllPermissionsPresentForPhotoTagging() {
-        for (String permission : permissions1) {
+        for (String permission : permissions) {
             if (ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
                 return false;
             }
@@ -129,22 +132,23 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == PERMISSIONS_CODE) {
+
             if (checkWhetherAllPermissionsPresentForPhotoTagging()) {
+
                 Toast.makeText(this, "camera permission granted", Toast.LENGTH_LONG).show();
                 Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
                 startActivityForResult(cameraIntent, CAMERA_REQUEST);
+
             } else if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, getPermissionsAmongPermission[0])) {
                 showAppDialog();
-                Log.d("pk", "from onRequestPermissionsResult ");
+                Log.d("pk", "from onRequestPermissionsResult 1 ");
             } else {
+                showAppDialog();
                 Log.d("pk", "from onRequestPermissionsResult  2");
 
-                showAppDialog();
-
             }
-
-
         }
     }
 
@@ -204,16 +208,19 @@ public class MainActivity extends AppCompatActivity {
             photo = (Bitmap) data.getExtras().get("data");
             tempUri = getImageUri(getApplicationContext(), photo);
             String uriString = tempUri.toString();
-            binding.webView.evaluateJavascript("javascript:updateURI(uriString);", null);
+            binding.webView.evaluateJavascript("javascript:updateURI(\"" + uriString + "\")", null);
+        } else if (resultCode == Activity.RESULT_CANCELED){
+            binding.webView.evaluateJavascript("javascript:updateURI('camera didnt capture the img')", null);
 
-            Log.d("pk", tempUri.getPath());
         }
+
     }
+
 
     private Uri getImageUri(Context inContext, Bitmap inImage) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
-        String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "Title", null);
+        String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, " " + System.currentTimeMillis(), null);
         return Uri.parse(path);
     }
 
@@ -229,9 +236,6 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void uri() {
             openCamera();
-//            Log.d("pk1", tempUri.getPath());
-//
-//            return tempUri.getPath();
         }
     }
 
