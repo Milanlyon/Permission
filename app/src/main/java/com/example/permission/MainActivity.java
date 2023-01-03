@@ -237,6 +237,16 @@ public class MainActivity extends AppCompatActivity {
         public void uri() {
             openCamera();
         }
+        @JavascriptInterface
+        public void openURL(String url){
+            openLoadingUrlPage(url);
+        }
+    }
+
+    private void openLoadingUrlPage(String url) {
+        Intent intent = new Intent(MainActivity.this,LoadingUrlPage.class);
+        intent.putExtra("url",url);
+        startActivity(intent);
     }
 
 
